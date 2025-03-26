@@ -1,11 +1,7 @@
+streamlit
 openai==1.68.2
 azure-ai-formrecognizer==3.2.1
 azure-core==1.29.5
-python-dotenv==1.0.1
-fastapi==0.110.2
-uvicorn==0.29.0
+pymupdf==1.22.5  # PyMuPDF for PDF parsing
+python-dotenv==1.0.1  # Not needed if using Streamlit secrets, but keep for local runs
 pandas==2.1.4
-PyMuPDF==1.23.3  # For PDF parsing
-streamlit
-azure-identity
-azure-storage-blob
