@@ -2,12 +2,12 @@
 
 ![Streamlit](https://img.shields.io/badge/Streamlit-Deployed-green) ![Azure](https://img.shields.io/badge/Azure-OpenAI-blue)  
 
-## 🚀 Overview  
+## Overview  
 This project is a **legal document summarization app** that uses **Azure OpenAI** to generate structured summaries from uploaded legal documents (PDF, DOCX, TXT). Users can upload documents, and the AI extracts **key clauses, obligations, limitations, and key takeaways** in a readable format.  
 
 🔗 **Live App:** [Click here to try it](https://hm7wfwgmuzc6quxxttmbrf.streamlit.app/)  
 
-## 🎯 Features  
+## Features  
 ✅ Upload **PDF, DOCX, and TXT** files  
 ✅ Extract structured summaries using **Azure OpenAI**  
 ✅ Display results in a **clean format** (not raw JSON)  
@@ -60,7 +60,7 @@ streamlit run app.py
 └── 📁 utils                  # Helper functions (if any)
 ```
 
-## 🚀 Deploying on Streamlit  
+## Deploying on Streamlit  
 1. Push your code to GitHub  
 2. Go to **Streamlit Cloud** and deploy using your GitHub repo  
 3. Add your Azure **secrets** in the Streamlit deployment settings  
