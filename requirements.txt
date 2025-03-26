@@ -7,3 +7,4 @@ uvicorn==0.29.0
 pandas==2.1.4
 PyMuPDF==1.22.5
 streamlit
+python-docx
