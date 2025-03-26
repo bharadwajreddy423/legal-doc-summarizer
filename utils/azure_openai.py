@@ -26,65 +26,54 @@ class AzureOpenAISummarizer:
             api_version=API_VERSION,
         )
 
-    def summarize_text(self, text: str, max_tokens: int = 700) -> dict:
-        """
-        Summarizes legal document text into a structured JSON format.
+    import json
+import logging
 
-        Args:
-            text (str): The extracted text from the document.
-            max_tokens (int): Maximum token limit for response.
+def summarize_text(text: str, max_tokens: int = 500) -> dict:
+    """
+    Summarizes legal document text into a structured JSON format.
 
-        Returns:
-            dict: Structured JSON containing key details of the document.
-        """
+    Args:
+        text (str): The extracted text from the document.
+        max_tokens (int): Maximum token limit for response.
+
+    Returns:
+        dict: Structured JSON containing key details of the document.
+    """
+    try:
+        logging.info("Sending request to Azure OpenAI for summarization...")
+        response = openai_client.chat.completions.create(
+            model=DEPLOYMENT_NAME,
+            messages=[
+                {"role": "system", "content": "You are an AI that extracts structured summaries from legal documents."},
+                {"role": "user", "content": f"Extract a structured summary from this legal document:\n{text}\n\n"
+                                            "Format the output as JSON with keys: document_title, key_clauses, "
+                                            "obligations, limitations, key_takeaways."}
+            ],
+            max_tokens=max_tokens,
+            temperature=0.5
+        )
+
+        structured_summary = response.choices[0].message.content.strip()
+        
+        # Check if the response is empty before parsing JSON
+        if not structured_summary:
+            logging.error("Received an empty response from OpenAI.")
+            return {"error": "Received an empty response from OpenAI."}
+
+        logging.info("Summary successfully generated.")
+
         try:
-            logging.info("Sending request to Azure OpenAI for structured summarization...")
+            summary_json = json.loads(structured_summary)
+            return summary_json
+        except json.JSONDecodeError:
+            logging.error(f"Invalid JSON format received from OpenAI: {structured_summary}")
+            return {"error": "Failed to parse response as JSON."}
 
-            response = self.client.chat.completions.create(
-                model=DEPLOYMENT_NAME,
-                messages=[
-                    {"role": "system", "content": "You are an AI that extracts structured summaries from legal documents. "
-                                                  "You must always return output as valid JSON without additional text."},
-                    {"role": "user", "content": f"Extract a structured summary from this legal document:\n{text}\n\n"
-                                                 "Format the response as valid JSON:\n\n"
-                                                 "{\n"
-                                                 '  "document_title": "Title of the document",\n'
-                                                 '  "key_clauses": [\n'
-                                                 '    {"clause_number": 1, "description": "Clause description"}\n'
-                                                 '  ],\n'
-                                                 '  "obligations": [\n'
-                                                 '    {"party": "Party name", "description": "Obligation details"}\n'
-                                                 '  ],\n'
-                                                 '  "limitations": [\n'
-                                                 '    "Limitation 1", "Limitation 2"\n'
-                                                 '  ],\n'
-                                                 '  "key_takeaways": [\n'
-                                                 '    "Takeaway 1", "Takeaway 2"\n'
-                                                 '  ]\n'
-                                                 "}\n\n"
-                                                 "Only return valid JSON. No extra text, explanations, or markdown formatting."}
-                ],
-                max_tokens=max_tokens,
-                temperature=0  # Enforce deterministic output
-            )
+    except Exception as e:
+        logging.error(f"❌ Error summarizing text: {e}")
+        return {"error": str(e)}
 
-            structured_summary = response.choices[0].message.content.strip()
-            logging.info("Summary successfully generated.")
-
-            # Remove markdown code blocks if present
-            structured_summary = structured_summary.replace("```json", "").replace("```", "").strip()
-
-            # Validate and return JSON
-            try:
-                summary_json = json.loads(structured_summary)
-                return summary_json
-            except json.JSONDecodeError:
-                logging.error("❌ Invalid JSON format received from OpenAI.")
-                return {"error": "Failed to parse response as JSON."}
-
-        except Exception as e:
-            logging.error(f"❌ Error summarizing text: {e}")
-            return {"error": str(e)}
 
 
 if __name__ == "__main__":
