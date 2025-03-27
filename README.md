@@ -14,7 +14,7 @@ This project is a **legal document summarization app** that uses **Azure OpenAI*
 ✅ Supports multiple file uploads  
 
 ## 🛠️ Tech Stack  
-- **Azure OpenAI** (GPT model for summarization)  
+- **Azure OpenAI** (GPT-4o model for summarization)  
 - **Azure Document Intelligence** (for document processing)  
 - **Streamlit** (UI for document upload & results display)  
 - **Python** (FastAPI, Pandas, PyMuPDF, python-docx)  
