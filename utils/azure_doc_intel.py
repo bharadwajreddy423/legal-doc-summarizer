@@ -1,98 +1,63 @@
 import os
-import sys
-import json
 import logging
-from openai import AzureOpenAI
+import tempfile
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.core.credentials import AzureKeyCredential
 
-# Add project root to system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+class AzureDocumentIntelligence:
+    """Handles document processing using Azure Document Intelligence."""
 
-from config import OPENAI_ENDPOINT, OPENAI_KEY, API_VERSION, DEPLOYMENT_NAME
+    def __init__(self, endpoint: str, api_key: str):
+        """Initialize the Azure Document Intelligence client."""
+        self.client = DocumentIntelligenceClient(endpoint, AzureKeyCredential(api_key))
+        logging.info("✅ Azure Document Intelligence client initialized.")
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-class AzureOpenAISummarizer:
-    """
-    Azure OpenAI-based summarizer for legal documents.
-    """
-
-    def __init__(self):
-        """Initialize Azure OpenAI client."""
-        self.client = AzureOpenAI(
-            azure_endpoint=OPENAI_ENDPOINT,
-            api_key=OPENAI_KEY,
-            api_version=API_VERSION,
-        )
-
-    def summarize_text(self, text: str, max_tokens: int = 500) -> dict:
-        """
-        Summarizes legal document text into a structured JSON format.
-
-        Args:
-            text (str): The extracted text from the document.
-            max_tokens (int): Maximum token limit for response.
-
-        Returns:
-            dict: Structured JSON containing key details of the document.
-        """
+    def analyze_document(self, uploaded_file, model="prebuilt-layout"):
+        """Analyze a legal document using Azure Document Intelligence."""
         try:
-            logging.info("Sending request to Azure OpenAI for summarization...")
-            response = self.client.chat.completions.create(
-                model=DEPLOYMENT_NAME,
-                messages=[
-                    {"role": "system", "content": "You are an AI that extracts structured summaries from legal documents."},
-                    {"role": "user", "content": f"Extract a structured summary from this legal document:\n{text}\n\n"
-                                                 "Format the output as JSON with keys: document_title, key_clauses, "
-                                                 "obligations, limitations, key_takeaways."}
-                ],
-                max_tokens=max_tokens,
-                temperature=0.5
-            )
+            if not uploaded_file:
+                return {"error": "No file provided for processing."}
 
-            structured_summary = response.choices[0].message.content.strip()
-            logging.info("Summary successfully generated.")
+            file_extension = uploaded_file.name.split(".")[-1].lower()
 
-            # Validate if output is JSON
-            try:
-                summary_json = json.loads(structured_summary)
-                return summary_json
-            except json.JSONDecodeError:
-                logging.error("Invalid JSON format received from OpenAI.")
-                return {"error": "Failed to parse response as JSON."}
+            # Create a temporary file to handle document processing
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as temp_file:
+                temp_file.write(uploaded_file.read())
+                temp_file_path = temp_file.name
+
+            logging.info(f"📄 Processing document: {uploaded_file.name}")
+
+            # Open and analyze the document using Azure Document Intelligence
+            with open(temp_file_path, "rb") as document_stream:
+                poller = self.client.begin_analyze_document(model, document_stream)
+                result = poller.result()
+
+            os.remove(temp_file_path)  # Clean up temp file
+
+            extracted_text = self._parse_analysis_result(result)
+
+            if not extracted_text.strip():
+                logging.warning("⚠️ No text was extracted from the document.")
+                return {"error": "No text extracted from the document. Ensure the file is readable."}
+
+            return {"file_name": uploaded_file.name, "extracted_data": extracted_text}
 
         except Exception as e:
-            logging.error(f"❌ Error summarizing text: {e}")
+            logging.error(f"❌ Error processing document: {e}")
             return {"error": str(e)}
 
-    def summarize_multiple_documents(self, documents: list) -> list:
-        """
-        Processes multiple documents and returns a list of structured summaries.
+    def _parse_analysis_result(self, result):
+        """Extract text content from the Azure Document Intelligence response."""
+        try:
+            extracted_text = ""
 
-        Args:
-            documents (list): List of text documents.
+            for page in result.pages:
+                if hasattr(page, "lines"):
+                    extracted_text += "\n".join([line.content for line in page.lines]) + "\n"
 
-        Returns:
-            list: List of structured summaries.
-        """
-        summaries = []
-        for idx, doc in enumerate(documents):
-            logging.info(f"Processing document {idx + 1}/{len(documents)}...")
-            summary = self.summarize_text(doc)
-            summaries.append(summary)
-        return summaries
+            return extracted_text.strip()
 
+        except Exception as e:
+            logging.error(f"❌ Error parsing document results: {e}")
+            return ""
 
-if __name__ == "__main__":
-    summarizer = AzureOpenAISummarizer()
-
-    # Sample multiple documents
-    sample_documents = [
-        "This is a sample contract agreement that outlines the terms and conditions between two parties...",
-        "Another legal notice demanding repayment under specified conditions..."
-    ]
-
-    summaries = summarizer.summarize_multiple_documents(sample_documents)
-
-    if summaries:
-        print("\n✅ Summarized JSON Output:\n", json.dumps(summaries, indent=4))
