@@ -53,16 +53,6 @@ API_VERSION="2024-05-01-preview"
 streamlit run app.py
 ```
 
-## 📂 Project Structure  
-```
-📦 legal-doc-summarization
-├── 📄 app.py                 # Streamlit app
-├── 📄 config.py              # Configuration file (reads Streamlit secrets)
-├── 📄 requirements.txt       # Python dependencies
-├── 📄 README.md              # Project documentation
-└── 📁 utils                  # Helper functions (if any)
-```
-
 ## Deploying on Streamlit  
 1. Push your code to GitHub  
 2. Go to **Streamlit Cloud** and deploy using your GitHub repo  
