@@ -7,6 +7,9 @@ This project is a **legal document summarization app** that uses **Azure OpenAI*
 
 🔗 **Live App:** [Click here to try it](https://hm7wfwgmuzc6quxxttmbrf.streamlit.app/)  
 
+![Screenshot 2025-03-31 101803](https://github.com/user-attachments/assets/4b96e4f4-f206-4247-9a16-25c3ee1bda2f)
+
+
 ## Features  
 ✅ Upload **PDF, DOCX, and TXT** files  
 ✅ Extract structured summaries using **Azure OpenAI**  
